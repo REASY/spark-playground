@@ -13,7 +13,7 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions._
 
 object ModelTrainer_Gen extends LocalSparkContext {
-  val Level: Int = 3
+  val Level: Int = 5
   val perLevelOutLinkFeatures = (1 to Level).flatMap { lvl =>
     Array(s"L${lvl}_TotalVeh_OutLinks",	s"L${lvl}_MinVeh_OutLinks", s"L${lvl}_MaxVeh_OutLinks", s"L${lvl}_MedianVeh_OutLinks", s"L${lvl}_AvgVeh_OutLinks", s"L${lvl}_StdVeh_OutLinks")
   }
@@ -33,7 +33,7 @@ object ModelTrainer_Gen extends LocalSparkContext {
   val trainGeneralizedModel: Boolean = true
 
   def main(args: Array[String]): Unit = {
-    println(s"trainGeneralizedModel: ${trainGeneralizedModel}")
+    println(s"Level: ${Level}, trainGeneralizedModel: ${trainGeneralizedModel}")
 
     val metaData = spark.read.format("csv").option("header", "true").load("C:\\temp\\BeamRegression\\Metadata.csv").cache()
     val df = readCsv("C:\\temp\\BeamRegression\\link_stat.csv")
@@ -126,20 +126,20 @@ object ModelTrainer_Gen extends LocalSparkContext {
       .withColumn("percentErr", lit(100) * (col("travelTime") - col("PredictedtravelTime")) / col("travelTime"))
 
     predWithError.select(col("linkId"), col(labelColumn), col(predictedColumn),
-      col("absErr"), col("percentErr")).show(100)
+      col("absErr"), col("percentErr")).show(50)
 
     predWithError.orderBy(col("absErr").desc)
       .select(col("linkId"), col(labelColumn), col(predictedColumn),
-        col("absErr"), col("percentErr"), col("*")).show(30)
+        col("absErr"), col("percentErr"), col("*")).show(10)
     predWithError.orderBy(col("absErr"))
       .select(col("linkId"), col(labelColumn), col(predictedColumn),
-        col("absErr"), col("percentErr"), col("*")).show(30)
+        col("absErr"), col("percentErr"), col("*")).show(10)
     predWithError.orderBy(col("percentErr"))
       .select(col("linkId"), col(labelColumn), col(predictedColumn),
-        col("absErr"), col("percentErr"), col("*")).show(30)
+        col("absErr"), col("percentErr"), col("*")).show(10)
     predWithError.orderBy(col("percentErr").desc)
       .select(col("linkId"), col(labelColumn), col(predictedColumn),
-        col("absErr"), col("percentErr"), col("*")).show(30)
+        col("absErr"), col("percentErr"), col("*")).show(10)
 
     model.stages.collect {
       case lrModel: LinearRegressionModel =>
