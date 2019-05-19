@@ -3,6 +3,7 @@ version := "0.2.0-SNAPSHOT"
 scalaVersion := "2.11.12"
 
 fork in run := true
+javaOptions += "-Xmx250G"
 
 resolvers += "MMLSpark Repo" at "https://mmlspark.azureedge.net/maven"
 resolvers += "Artima Maven Repository" at "http://repo.artima.com/releases"
