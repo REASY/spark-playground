@@ -42,6 +42,13 @@ libraryDependencies ++= Seq(
 )
 
 assemblyMergeStrategy in assembly := {
-  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case PathList("META-INF", xs @ _*) =>
+    xs match {
+      // Concatenate everything in the services directory to keep GeoTools happy.
+      case ("services" :: _ :: Nil) =>
+        MergeStrategy.concat
+      case _ =>
+        MergeStrategy.discard
+    }
   case x => MergeStrategy.first
 }

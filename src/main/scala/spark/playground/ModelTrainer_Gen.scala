@@ -106,7 +106,7 @@ object ModelTrainer_Gen extends LocalSparkContext {
 
   def train(df: DataFrame): Unit = {
     val splits = df.randomSplit(Array(0.8, 0.2), seed = seed)
-    val training = splits(0).repartition(200)
+    val training = splits(0).repartition(1000)
     val test = splits(1)
 
     val labelColumn = "travel_time"
