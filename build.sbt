@@ -40,3 +40,7 @@ libraryDependencies ++= Seq(
   "com.microsoft.ml.spark" %% "mmlspark" % "0.17"
 )
 
+assemblyMergeStrategy in assembly := {
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case x => MergeStrategy.first
+}
