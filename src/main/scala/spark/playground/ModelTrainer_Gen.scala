@@ -42,14 +42,17 @@ object ModelTrainer_Gen extends LocalSparkContext {
     df.filter(anyNull).show(100)
   }
 
-  val metaDataPath = """D:\Work\beam\TravelTimePrediction\production-sfbay\Metadata_5.parquet""" // """D:\Work\beam\production-sfbay\Metadata_5.parquet"""
-  val linkStatPath = """D:\Work\beam\TravelTimePrediction\production-sfbay\link_stats_5.parquet""" // """D:\Work\beam\production-sfbay\link_stats_5.parquet"""
+
+
   val dataReadyPath =
     """C:\temp\BeamRegression\Prod"""
   val isDataReady: Boolean = false
   val shouldWriteJoinedData: Boolean = false
 
   def main(args: Array[String]): Unit = {
+    val metaDataPath = args(0) // """D:\Work\beam\TravelTimePrediction\production-sfbay\Metadata_5.parquet"""
+    val linkStatPath = args(1) // """D:\Work\beam\TravelTimePrediction\production-sfbay\link_stats_5.parquet""" // """D:\Work\beam\production-sfbay\link_stats_5.parquet"""
+
     println(s"Level: $Level, trainGeneralizedModel: $trainGeneralizedModel, numOfDatapointsPerLink: $numOfDatapointsPerLink")
     val s = System.currentTimeMillis()
 
