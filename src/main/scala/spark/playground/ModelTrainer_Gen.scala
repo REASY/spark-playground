@@ -64,11 +64,12 @@ object ModelTrainer_Gen extends LocalSparkContext {
 //      }
 
       val linkStatDf = {
-        val df = spark.read.parquet(linkStatPath).where(col("enter_time") >= 7*3600 && col("enter_time") <= 11*3600)
-        val enoughDatapointsPerLink = df.groupBy("link_id").agg(count("*").as("cnt"))
-          .filter(col("cnt") >= numOfDatapointsPerLink)
-        df.join(enoughDatapointsPerLink, Seq("link_id"), "inner")
-          .drop(col("cnt"))
+        val df = spark.read.parquet(linkStatPath) //.where(col("enter_time") >= 7*3600 && col("enter_time") <= 11*3600)
+//        val enoughDatapointsPerLink = df.groupBy("link_id").agg(count("*").as("cnt"))
+//          .filter(col("cnt") >= numOfDatapointsPerLink)
+//        df.join(enoughDatapointsPerLink, Seq("link_id"), "inner")
+//          .drop(col("cnt"))
+        df
       }
       // linkStatDf.describe().show()
 //      val df = linkStatDf
@@ -102,7 +103,7 @@ object ModelTrainer_Gen extends LocalSparkContext {
 
   def train(df: DataFrame): Unit = {
     val splits = df.randomSplit(Array(0.8, 0.2), seed = seed)
-    val training = splits(0).repartition(800)
+    val training = splits(0).repartition(200)
     val test = splits(1)
 
     val labelColumn = "travel_time"
