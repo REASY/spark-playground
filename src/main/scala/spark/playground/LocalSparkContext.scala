@@ -11,10 +11,9 @@ trait LocalSparkContext {
     .master("local[1]")
     .config("spark.ui.port", "4080")
     .config("spark.driver.host", "localhost")
-    .config("spark.executor.memory", "4g")
-    .config("spark.driver.memory", "8g")
+    .config("spark.driver.memory", "24g")
     .config("spark.executor.instances", "1")
-    .config("spark.executor.cores", Runtime.getRuntime.availableProcessors().toString)
+    .config("spark.executor.cores", "2")
     .getOrCreate()
 
   val sc: SparkContext = spark.sparkContext

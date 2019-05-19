@@ -1,8 +1,11 @@
 name := "spark-playground"
 version := "0.2.0-SNAPSHOT"
-scalaVersion := "2.12.8"
+scalaVersion := "2.11.12"
 
 fork in run := true
+
+resolvers += "MMLSpark Repo" at "https://mmlspark.azureedge.net/maven"
+resolvers += "Artima Maven Repository" at "http://repo.artima.com/releases"
 
 scalacOptions ++= Seq(
   "-deprecation",
@@ -31,9 +34,9 @@ libraryDependencies ++= Seq(
   "commons-io" % "commons-io" % "2.4",
   "org.apache.hadoop" % "hadoop-common" % "2.7.2",
   "org.apache.hadoop" % "hadoop-mapreduce-client-core" % "2.7.2",
-  "org.apache.spark" %% "spark-core" % "2.4.2",
-  "org.apache.spark" %% "spark-mllib"  % "2.4.2",
-  "org.apache.spark" %% "spark-sql"  % "2.4.2"
+  "org.apache.spark" %% "spark-core" % "2.4.3",
+  "org.apache.spark" %% "spark-mllib"  % "2.4.3",
+  "org.apache.spark" %% "spark-sql"  % "2.4.3",
+  "com.microsoft.ml.spark" %% "mmlspark" % "0.17"
 )
 
-resolvers += "Artima Maven Repository" at "http://repo.artima.com/releases"
