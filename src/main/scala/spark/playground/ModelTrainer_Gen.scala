@@ -8,9 +8,9 @@ import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.regression.{GBTRegressionModel, GBTRegressor, LinearRegressionModel}
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.TimestampType
+import org.apache.spark.sql.{Column, DataFrame}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.SizeEstimator
 
@@ -31,6 +31,15 @@ object ModelTrainer_Gen extends LocalSparkContext {
   val allColumns: Array[String] = Array("vehicles_on_road") ++
     perLevelOutLinkFeatures ++ perLevelInLinkFeatures
 
+  val featureColumns = allColumns.flatMap { col =>
+    Seq("min_" + col,
+        "max_" + col,
+        "avg_" + col,
+        "mean_" + col,
+        "sum_" + col
+    )
+  }
+
   val seed: Long = 41L
 
   val linkIdsWithMoreThan1kDataPoints: Array[String] = getResourceFileAsString("link_ids").replaceAll("\r", "").split("\n")
@@ -44,18 +53,27 @@ object ModelTrainer_Gen extends LocalSparkContext {
     df.filter(anyNull).show(100)
   }
 
+  def makeStat(name: String): Seq[Column] = {
+    val col: Column = new Column(name)
+    Seq(min(col).as("min_" + col.toString()),
+      max(col).as("max_" + col.toString()),
+      avg(col).as("avg_" + col.toString()),
+      mean(col).as("mean_" + col.toString()),
+      sum(col).as("sum_" + col.toString())
+    )
+  }
 
-  val dataReadyPath = """d:/Work/beam/TravelTimePrediction/production-sfbay/link_stats_5_only_with_datapoints"""
+  val dataReadyPath = """d:/Work/beam/TravelTimePrediction/production-sfbay/link_stats_5_aggregated"""
   val isDataReady: Boolean = false
   val shouldWriteJoinedData: Boolean = false
 
   def main(args: Array[String]): Unit = {
     val metaDataPath: String = args(0) // """D:\Work\beam\TravelTimePrediction\production-sfbay\Metadata_5.parquet"""
     val linkStatPath: String = args(1) // """D:\Work\beam\TravelTimePrediction\production-sfbay\link_stats_5.parquet""" // """D:\Work\beam\production-sfbay\link_stats_5.parquet"""
-    val topN: Int = if (args.length > 2) args(2).toInt else 50
+    val windowDuration: String = args(2)
 
     println(s"Level: $Level, trainGeneralizedModel: $trainGeneralizedModel, numOfDatapointsPerLink: $numOfDatapointsPerLink")
-    println(s"metaDataPath: $metaDataPath, linkStatPath: $linkStatPath")
+    println(s"windowDuration: $windowDuration, metaDataPath: $metaDataPath, linkStatPath: $linkStatPath")
     val s = System.currentTimeMillis()
 
 //    spark.read.parquet(linkStatPath).
@@ -74,21 +92,33 @@ object ModelTrainer_Gen extends LocalSparkContext {
 //        md.na.fill(0.0).persist(StorageLevel.MEMORY_ONLY)
 //      }
 
+      println(col("col"))
+      println(col("col").expr.nodeName)
+
       val linkStatDf = {
-        val df = spark.read.parquet(linkStatPath) //.where(col("enter_time") >= 7*3600 && col("enter_time") <= 11*3600)
-        val enoughDatapointsPerLink = df.groupBy("link_id").agg(count("*").as("cnt"))
-          .filter(col("cnt") >= numOfDatapointsPerLink)
-          .orderBy(col("cnt").desc)
-          .withColumn("row_id", row_number().over(Window.orderBy(col("cnt").desc)))
-          .filter(col("row_id") <= topN)
-          .persist(StorageLevel.MEMORY_ONLY)
-
-        enoughDatapointsPerLink.show(100)
-        enoughDatapointsPerLink.describe().show()
-
-        df.join(enoughDatapointsPerLink, Seq("link_id"), "inner")
-          .drop(col("cnt"))
-          .drop(col("row_id"))
+        val avgStats = makeStat("travel_time") ++ allColumns.flatMap(makeStat)
+        //.where(col("enter_time") >= 7*3600 && col("enter_time") <= 11*3600)
+        val df =
+          spark.read.parquet(linkStatPath).withColumn("ts", col("leave_time").cast(TimestampType))
+         .groupBy(col("link_id"), window(col("ts"), windowDuration))
+         .agg(avg(col("travel_time")).as("travel_time"),
+           avgStats: _*).persist(StorageLevel.MEMORY_ONLY)
+        // df.coalesce(1).write.parquet(dataReadyPath)
+        df.show(100, false)
+        // throw new Exception("ASD")
+//        val enoughDatapointsPerLink = df.groupBy("link_id").agg(count("*").as("cnt"))
+//          .filter(col("cnt") >= numOfDatapointsPerLink)
+//          .orderBy(col("cnt").desc)
+//          .withColumn("row_id", row_number().over(Window.orderBy(col("cnt").desc)))
+//          .filter(col("row_id") <= topN)
+//          .persist(StorageLevel.MEMORY_ONLY)
+//
+//        enoughDatapointsPerLink.show(100)
+//        enoughDatapointsPerLink.describe().show()
+//
+//        df.join(enoughDatapointsPerLink, Seq("link_id"), "inner")
+//          .drop(col("cnt"))
+//          .drop(col("row_id"))
         df
       }
       // linkStatDf.coalesce(1).write.parquet(dataReadyPath)
@@ -127,7 +157,7 @@ object ModelTrainer_Gen extends LocalSparkContext {
     val featureColumn = "features"
 
     val assembler = new VectorAssembler()
-      .setInputCols(allColumns)
+      .setInputCols(featureColumns)
       .setOutputCol("features")
 
     val gbt = new GBTRegressor()
