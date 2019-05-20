@@ -11,6 +11,7 @@ import org.apache.spark.ml.regression.{GBTRegressionModel, GBTRegressor, LinearR
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions._
 import org.apache.spark.storage.StorageLevel
+import org.apache.spark.util.SizeEstimator
 
 import scala.collection.immutable
 
@@ -35,13 +36,12 @@ object ModelTrainer_Gen extends LocalSparkContext {
 
   val trainGeneralizedModel: Boolean = true
 
-  val numOfDatapointsPerLink: Int = 1000
+  val numOfDatapointsPerLink: Int = 5000
 
   def showNulls(df: DataFrame): Unit = {
     val anyNull = df.columns.map(x => col(x).isNull).reduce(_ || _)
     df.filter(anyNull).show(100)
   }
-
 
 
   val dataReadyPath =
@@ -54,7 +54,14 @@ object ModelTrainer_Gen extends LocalSparkContext {
     val linkStatPath = args(1) // """D:\Work\beam\TravelTimePrediction\production-sfbay\link_stats_5.parquet""" // """D:\Work\beam\production-sfbay\link_stats_5.parquet"""
 
     println(s"Level: $Level, trainGeneralizedModel: $trainGeneralizedModel, numOfDatapointsPerLink: $numOfDatapointsPerLink")
+    println(s"metaDataPath: $metaDataPath, linkStatPath: $linkStatPath")
     val s = System.currentTimeMillis()
+
+//    spark.read.parquet(linkStatPath).
+//      groupBy("link_id").agg(count("*").as("cnt"))
+//      .orderBy(col("cnt").desc)
+//      .persist(StorageLevel.MEMORY_ONLY)
+//      .show(200000)
 
     val df = if (!isDataReady) {
 //      val metaData = {
@@ -68,10 +75,10 @@ object ModelTrainer_Gen extends LocalSparkContext {
 
       val linkStatDf = {
         val df = spark.read.parquet(linkStatPath) //.where(col("enter_time") >= 7*3600 && col("enter_time") <= 11*3600)
-//        val enoughDatapointsPerLink = df.groupBy("link_id").agg(count("*").as("cnt"))
-//          .filter(col("cnt") >= numOfDatapointsPerLink)
-//        df.join(enoughDatapointsPerLink, Seq("link_id"), "inner")
-//          .drop(col("cnt"))
+        val enoughDatapointsPerLink = df.groupBy("link_id").agg(count("*").as("cnt"))
+          .filter(col("cnt") >= numOfDatapointsPerLink)
+        df.join(enoughDatapointsPerLink, Seq("link_id"), "inner")
+          .drop(col("cnt"))
         df
       }
       // linkStatDf.describe().show()
@@ -89,6 +96,7 @@ object ModelTrainer_Gen extends LocalSparkContext {
     }
 
     println(df.count())
+    println(s"Dataframe size is: ${SizeEstimator.estimate(df)}")
 
     if (!trainGeneralizedModel) {
       linkIdsWithMoreThan1kDataPoints.foreach { linkId =>
@@ -106,8 +114,10 @@ object ModelTrainer_Gen extends LocalSparkContext {
 
   def train(df: DataFrame): Unit = {
     val splits = df.randomSplit(Array(0.8, 0.2), seed = seed)
-    val training = splits(0).repartition(1000)
+    val training = splits(0).repartition(400)
     val test = splits(1)
+
+    println(s"Training dataframe size is: ${SizeEstimator.estimate(training)}")
 
     val labelColumn = "travel_time"
     val predictedColumn = "Predicted" + labelColumn
