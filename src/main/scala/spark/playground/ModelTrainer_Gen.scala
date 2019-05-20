@@ -19,12 +19,10 @@ import scala.collection.immutable
 object ModelTrainer_Gen extends LocalSparkContext {
   val Level: Int = 5
   val perLevelOutLinkFeatures: immutable.IndexedSeq[String] = (1 to Level).flatMap { lvl =>
-    Array(s"L${lvl}_TotalVeh_OutLinks", s"L${lvl}_MinVeh_OutLinks", s"L${lvl}_MaxVeh_OutLinks",
-      s"L${lvl}_MedianVeh_OutLinks", s"L${lvl}_AvgVeh_OutLinks", s"L${lvl}_StdVeh_OutLinks")
+    Array(s"L${lvl}_TotalVeh_OutLinks")
   }
   val perLevelInLinkFeatures: immutable.IndexedSeq[String] = (1 to Level).flatMap { lvl =>
-    Array(s"L${lvl}_TotalVeh_InLinks", s"L${lvl}_MinVeh_InLinks", s"L${lvl}_MaxVeh_InLinks",
-      s"L${lvl}_MedianVeh_InLinks", s"L${lvl}_AvgVeh_InLinks", s"L${lvl}_StdVeh_InLinks")
+    Array(s"L${lvl}_TotalVeh_InLinks")
   }
 
   // Array("vehOnRoad", "capacity", "lanes", "length", "FromNode_InLinksSize", "FromNode_OutLinksSize", "ToNode_InLinksSize", "ToNode_OutLinksSize")
@@ -63,7 +61,7 @@ object ModelTrainer_Gen extends LocalSparkContext {
     )
   }
 
-  val dataReadyPath = """d:/Work/beam/TravelTimePrediction/production-sfbay/link_stats_5_aggregated"""
+  val dataReadyPath = """d:/Work/beam/TravelTimePrediction/sf-light/link_stats_5_aggregated_100_seconds_window"""
   val isDataReady: Boolean = false
   val shouldWriteJoinedData: Boolean = false
 
@@ -105,6 +103,8 @@ object ModelTrainer_Gen extends LocalSparkContext {
            avgStats: _*).persist(StorageLevel.MEMORY_ONLY)
         // df.coalesce(1).write.parquet(dataReadyPath)
         df.show(100, false)
+        println(s"Written in ${System.currentTimeMillis() - s} ms")
+
         // throw new Exception("ASD")
 //        val enoughDatapointsPerLink = df.groupBy("link_id").agg(count("*").as("cnt"))
 //          .filter(col("cnt") >= numOfDatapointsPerLink)
