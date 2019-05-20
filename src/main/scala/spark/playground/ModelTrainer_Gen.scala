@@ -96,7 +96,7 @@ object ModelTrainer_Gen extends LocalSparkContext {
       val linkStatDf = {
         val avgStats = makeStat("travel_time") ++ allColumns.flatMap(makeStat)
         //.where(col("enter_time") >= 7*3600 && col("enter_time") <= 11*3600)
-        val allNeededCol: Array[String] = allColumns :+ "travel_time"
+        val allNeededCol: Array[String] = allColumns ++ Array("leave_time", "travel_time")
         val df =
           spark.read.parquet(linkStatPath).withColumn("ts", col("leave_time").cast(TimestampType))
           .select("link_id",  allNeededCol :_*)
