@@ -94,7 +94,7 @@ object ModelTrainer_Gen extends LocalSparkContext {
       println(col("col").expr.nodeName)
 
       val linkStatDf = {
-        val avgStats = makeStat("travel_time") ++ allColumns.flatMap(makeStat)
+        val avgStats = allColumns.flatMap(makeStat)
         //.where(col("enter_time") >= 7*3600 && col("enter_time") <= 11*3600)
         val allNeededCol: Array[String] = allColumns ++ Array("leave_time", "travel_time", "ts")
         val df =
@@ -234,11 +234,11 @@ object ModelTrainer_Gen extends LocalSparkContext {
       case lgbmModel: LightGBMRegressionModel =>
         // println("Learned regression GBT model:\n" + lgbmModel.toDebugString)
         println("gain")
-        getFeatureImportance(lgbmModel, allColumns, "gain").foreach { case (importance, name) =>
+        getFeatureImportance(lgbmModel, featureColumns, "gain").foreach { case (importance, name) =>
           println(s"$name: $importance")
         }
         println("split")
-        getFeatureImportance(lgbmModel, allColumns, "split").foreach { case (importance, name) =>
+        getFeatureImportance(lgbmModel, featureColumns, "split").foreach { case (importance, name) =>
           println(s"$name: $importance")
         }
     }
