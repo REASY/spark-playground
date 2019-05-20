@@ -9,6 +9,7 @@ import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.regression.{GBTRegressionModel, GBTRegressor, LinearRegressionModel}
 import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.SizeEstimator
@@ -49,8 +50,9 @@ object ModelTrainer_Gen extends LocalSparkContext {
   val shouldWriteJoinedData: Boolean = false
 
   def main(args: Array[String]): Unit = {
-    val metaDataPath = args(0) // """D:\Work\beam\TravelTimePrediction\production-sfbay\Metadata_5.parquet"""
-    val linkStatPath = args(1) // """D:\Work\beam\TravelTimePrediction\production-sfbay\link_stats_5.parquet""" // """D:\Work\beam\production-sfbay\link_stats_5.parquet"""
+    val metaDataPath: String = args(0) // """D:\Work\beam\TravelTimePrediction\production-sfbay\Metadata_5.parquet"""
+    val linkStatPath: String = args(1) // """D:\Work\beam\TravelTimePrediction\production-sfbay\link_stats_5.parquet""" // """D:\Work\beam\production-sfbay\link_stats_5.parquet"""
+    val topN: Int = if (args.length > 2) args(2).toInt else 50
 
     println(s"Level: $Level, trainGeneralizedModel: $trainGeneralizedModel, numOfDatapointsPerLink: $numOfDatapointsPerLink")
     println(s"metaDataPath: $metaDataPath, linkStatPath: $linkStatPath")
@@ -76,8 +78,17 @@ object ModelTrainer_Gen extends LocalSparkContext {
         val df = spark.read.parquet(linkStatPath) //.where(col("enter_time") >= 7*3600 && col("enter_time") <= 11*3600)
         val enoughDatapointsPerLink = df.groupBy("link_id").agg(count("*").as("cnt"))
           .filter(col("cnt") >= numOfDatapointsPerLink)
+          .orderBy(col("cnt").desc)
+          .withColumn("row_id", row_number().over(Window.orderBy(col("cnt").desc)))
+          .filter(col("row_id") <= topN)
+          .persist(StorageLevel.MEMORY_ONLY)
+
+        enoughDatapointsPerLink.show(100)
+        enoughDatapointsPerLink.describe().show()
+
         df.join(enoughDatapointsPerLink, Seq("link_id"), "inner")
           .drop(col("cnt"))
+          .drop(col("row_id"))
         df
       }
       // linkStatDf.coalesce(1).write.parquet(dataReadyPath)
