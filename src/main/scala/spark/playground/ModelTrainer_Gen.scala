@@ -44,8 +44,7 @@ object ModelTrainer_Gen extends LocalSparkContext {
   }
 
 
-  val dataReadyPath =
-    """C:\temp\BeamRegression\Prod"""
+  val dataReadyPath = """d:/Work/beam/TravelTimePrediction/production-sfbay/link_stats_5_only_with_datapoints"""
   val isDataReady: Boolean = false
   val shouldWriteJoinedData: Boolean = false
 
@@ -81,14 +80,7 @@ object ModelTrainer_Gen extends LocalSparkContext {
           .drop(col("cnt"))
         df
       }
-      // linkStatDf.describe().show()
-//      val df = linkStatDf
-//        .join(metaData, Seq("link_id"), "inner")
-//        if (shouldWriteJoinedData) {
-//          df.repartition(50).write.parquet(dataReadyPath)
-//          println(s"Written in ${System.currentTimeMillis() - s} ms")
-//        }
-//      df
+      // linkStatDf.coalesce(1).write.parquet(dataReadyPath)
       linkStatDf
     }
     else {
