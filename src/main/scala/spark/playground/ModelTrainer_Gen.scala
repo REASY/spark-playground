@@ -25,18 +25,31 @@ object ModelTrainer_Gen extends LocalSparkContext {
     Array(s"L${lvl}_TotalVeh_InLinks")
   }
 
-  // Array("vehOnRoad", "capacity", "lanes", "length", "FromNode_InLinksSize", "FromNode_OutLinksSize", "ToNode_InLinksSize", "ToNode_OutLinksSize")
+  val linkMetadata: Seq[String] = Seq("length", "capacity", "flow_capacity", "lanes", "free_speed",
+    "FromNode_InLinksSize", "FromNode_OutLinksSize", "FromNode_TotalLinksSize", "ToNode_InLinksSize", "ToNode_OutLinksSize", "ToNode_TotalLinksSize")
+
+  val inOutLinkMetadata = createStatFields(Level, "Length", "OutLinks") ++
+    createStatFields(Level, "Capacity", "OutLinks") ++
+    createStatFields(Level, "FlowCapacity", "OutLinks") ++
+    createStatFields(Level, "Lanes", "OutLinks") ++
+    createStatFields(Level, "FreeSpeed", "OutLinks") ++
+    createStatFields(Level, "Length", "InLinks") ++
+    createStatFields(Level, "Capacity", "InLinks") ++
+    createStatFields(Level, "FlowCapacity", "InLinks") ++
+    createStatFields(Level, "Lanes", "InLinks") ++
+    createStatFields(Level, "FreeSpeed", "InLinks")
+
   val allColumns: Array[String] = Array("vehicles_on_road") ++
     perLevelOutLinkFeatures ++ perLevelInLinkFeatures
 
   val featureColumns = allColumns.flatMap { col =>
     Seq("min_" + col,
-        "max_" + col,
-        "avg_" + col,
-        "mean_" + col,
-        "sum_" + col
+      "max_" + col,
+      "avg_" + col,
+      "mean_" + col,
+      "sum_" + col
     )
-  }
+  } ++ linkMetadata ++ inOutLinkMetadata
 
   val seed: Long = 41L
 
@@ -49,6 +62,19 @@ object ModelTrainer_Gen extends LocalSparkContext {
   def showNulls(df: DataFrame): Unit = {
     val anyNull = df.columns.map(x => col(x).isNull).reduce(_ || _)
     df.filter(anyNull).show(100)
+  }
+
+  def createStatFields(level: Int, name: String, linkType: String): Seq[String] = {
+    (1 to level).flatMap { lvl =>
+      Array(
+        s"L${lvl}_Total${name}_${linkType}",
+        s"L${lvl}_Min${name}_${linkType}",
+        s"L${lvl}_Max${name}_${linkType}",
+        s"L${lvl}_Median${name}_${linkType}",
+        s"L${lvl}_Avg${name}_${linkType}",
+        s"L${lvl}_Std${name}_${linkType}"
+      )
+    }
   }
 
   def makeStat(name: String): Seq[Column] = {
@@ -74,24 +100,22 @@ object ModelTrainer_Gen extends LocalSparkContext {
     println(s"windowDuration: $windowDuration, metaDataPath: $metaDataPath, linkStatPath: $linkStatPath")
     val s = System.currentTimeMillis()
 
-//    spark.read.parquet(linkStatPath).
-//      groupBy("link_id").agg(count("*").as("cnt"))
-//      .orderBy(col("cnt").desc)
-//      .persist(StorageLevel.MEMORY_ONLY)
-//      .show(200000)
+    //    spark.read.parquet(linkStatPath).
+    //      groupBy("link_id").agg(count("*").as("cnt"))
+    //      .orderBy(col("cnt").desc)
+    //      .persist(StorageLevel.MEMORY_ONLY)
+    //      .show(200000)
 
     val df = if (!isDataReady) {
-//      val metaData = {
-//        var md = spark.read.parquet(metaDataPath)
-//        (1 to Level).foreach { lvl =>
-//          md = md.withColumn(s"L${lvl}_flow_capacity_out_in_ratio",
-//            col(s"L${lvl}_TotalFlowCapacity_OutLinks") / col(s"L${lvl}_TotalFlowCapacity_InLinks"))
-//        }
-//        md.na.fill(0.0).persist(StorageLevel.MEMORY_ONLY)
-//      }
-
-      println(col("col"))
-      println(col("col").expr.nodeName)
+      val metaData = {
+        var md = spark.read.parquet(metaDataPath)
+        (1 to Level).foreach { lvl =>
+          md = md.withColumn(s"L${lvl}_flow_capacity_out_in_ratio",
+            col(s"L${lvl}_TotalFlowCapacity_OutLinks") / col(s"L${lvl}_TotalFlowCapacity_InLinks"))
+        }
+        md.na.fill(0.0).persist(StorageLevel.MEMORY_ONLY)
+      }
+      metaData.show(100)
 
       val linkStatDf = {
         val avgStats = allColumns.flatMap(makeStat)
@@ -99,32 +123,33 @@ object ModelTrainer_Gen extends LocalSparkContext {
         val allNeededCol: Array[String] = allColumns ++ Array("leave_time", "travel_time", "ts")
         val df =
           spark.read.parquet(linkStatPath).withColumn("ts", col("leave_time").cast(TimestampType))
-          .select("link_id",  allNeededCol :_*)
-         .groupBy(col("link_id"), window(col("ts"), windowDuration))
-         .agg(avg(col("travel_time")).as("travel_time"),
-           avgStats: _*).persist(StorageLevel.MEMORY_ONLY)
+            .select("link_id", allNeededCol: _*)
+            .groupBy(col("link_id"), window(col("ts"), windowDuration))
+            .agg(avg(col("travel_time")).as("travel_time"),
+              avgStats: _*).persist(StorageLevel.MEMORY_ONLY)
         // df.coalesce(1).write.parquet(dataReadyPath)
         df.show(100, false)
         println(s"Written in ${System.currentTimeMillis() - s} ms")
 
         // throw new Exception("ASD")
-//        val enoughDatapointsPerLink = df.groupBy("link_id").agg(count("*").as("cnt"))
-//          .filter(col("cnt") >= numOfDatapointsPerLink)
-//          .orderBy(col("cnt").desc)
-//          .withColumn("row_id", row_number().over(Window.orderBy(col("cnt").desc)))
-//          .filter(col("row_id") <= topN)
-//          .persist(StorageLevel.MEMORY_ONLY)
-//
-//        enoughDatapointsPerLink.show(100)
-//        enoughDatapointsPerLink.describe().show()
-//
-//        df.join(enoughDatapointsPerLink, Seq("link_id"), "inner")
-//          .drop(col("cnt"))
-//          .drop(col("row_id"))
+        //        val enoughDatapointsPerLink = df.groupBy("link_id").agg(count("*").as("cnt"))
+        //          .filter(col("cnt") >= numOfDatapointsPerLink)
+        //          .orderBy(col("cnt").desc)
+        //          .withColumn("row_id", row_number().over(Window.orderBy(col("cnt").desc)))
+        //          .filter(col("row_id") <= topN)
+        //          .persist(StorageLevel.MEMORY_ONLY)
+        //
+        //        enoughDatapointsPerLink.show(100)
+        //        enoughDatapointsPerLink.describe().show()
+        //
+        //        df.join(enoughDatapointsPerLink, Seq("link_id"), "inner")
+        //          .drop(col("cnt"))
+        //          .drop(col("row_id"))
         df
       }
+      linkStatDf.join(metaData, Seq("link_id"), "inner")
       // linkStatDf.coalesce(1).write.parquet(dataReadyPath)
-      linkStatDf
+
     }
     else {
       spark.read.parquet(dataReadyPath)
