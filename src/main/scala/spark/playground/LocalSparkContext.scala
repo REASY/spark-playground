@@ -8,12 +8,10 @@ trait LocalSparkContext {
     .builder()
     .appName("Local Spark example")
     .config("spark.master", "local")
-    .master("local[1]")
-    .config("spark.ui.port", "4080")
+    .master("local[*]")
+    .config("spark.ui.port", "8000")
     .config("spark.driver.host", "localhost")
     .config("spark.driver.memory", "24g")
-    .config("spark.executor.instances", "1")
-    .config("spark.executor.cores", "2")
     .getOrCreate()
 
   val sc: SparkContext = spark.sparkContext
