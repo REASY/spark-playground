@@ -115,11 +115,10 @@ object ModelTrainer_Gen extends LocalSparkContext {
         }
         md.na.fill(0.0).persist(StorageLevel.MEMORY_ONLY)
       }
-      metaData.show(100)
+     // metaData.show(100)
 
       val linkStatDf = {
         val avgStats = allColumns.flatMap(makeStat)
-        //.where(col("enter_time") >= 7*3600 && col("enter_time") <= 11*3600)
         val allNeededCol: Array[String] = allColumns ++ Array("leave_time", "travel_time", "ts")
         val df =
           spark.read.parquet(linkStatPath).withColumn("ts", col("leave_time").cast(TimestampType))
@@ -128,8 +127,7 @@ object ModelTrainer_Gen extends LocalSparkContext {
             .agg(avg(col("travel_time")).as("travel_time"),
               avgStats: _*).persist(StorageLevel.MEMORY_ONLY)
         // df.coalesce(1).write.parquet(dataReadyPath)
-        df.show(100, false)
-        println(s"Written in ${System.currentTimeMillis() - s} ms")
+       //  df.show(100, false)
 
         // throw new Exception("ASD")
         //        val enoughDatapointsPerLink = df.groupBy("link_id").agg(count("*").as("cnt"))
@@ -192,7 +190,7 @@ object ModelTrainer_Gen extends LocalSparkContext {
       .setLabelCol(labelColumn)
       .setFeaturesCol(featureColumn)
       .setPredictionCol(predictedColumn)
-      .setMaxIter(10)
+      .setMaxIter(20)
 
     val lgbm = new LightGBMRegressor()
       .setBaggingSeed(seed.toInt)
@@ -202,7 +200,7 @@ object ModelTrainer_Gen extends LocalSparkContext {
 
     val stages = Array(
       assembler,
-      lgbm
+      gbt
     )
 
     val pipeline = new Pipeline().setStages(stages)
@@ -214,12 +212,16 @@ object ModelTrainer_Gen extends LocalSparkContext {
     val evaluator = new RegressionEvaluator()
       .setLabelCol(labelColumn)
       .setPredictionCol("Predicted" + labelColumn)
+    val rmse = evaluator.setMetricName("rmse").evaluate(predictions)
+    val mse = evaluator.setMetricName("mse").evaluate(predictions)
+    val mae = evaluator.setMetricName("mae").evaluate(predictions)
+    val r2 = evaluator.setMetricName("r2").evaluate(predictions)
     println
     println
-    println(s"rootMeanSquaredError: ${evaluator.setMetricName("rmse").evaluate(predictions)}")
-    println(s"meanSquaredError: ${evaluator.setMetricName("mse").evaluate(predictions)}")
-    println(s"meanAbsoluteError: ${evaluator.setMetricName("mae").evaluate(predictions)}")
-    println(s"r2: ${evaluator.setMetricName("r2").evaluate(predictions)}")
+    println(s"rootMeanSquaredError: ${rmse}")
+    println(s"meanSquaredError: ${mse}")
+    println(s"meanAbsoluteError: ${mae}")
+    println(s"r2: ${r2}")
 
     val predWithError = predictions
       .withColumn("absErr", abs(col(labelColumn) - col(predictedColumn)))
@@ -267,6 +269,11 @@ object ModelTrainer_Gen extends LocalSparkContext {
           println(s"$name: $importance")
         }
     }
+
+    println(s"rootMeanSquaredError: ${rmse}")
+    println(s"meanSquaredError: ${mse}")
+    println(s"meanAbsoluteError: ${mae}")
+    println(s"r2: ${r2}")
   }
 
   private def getFeatureImportance(gbtModel: GBTRegressionModel, allColumns: Array[String]): Array[(Double, String)] = {
