@@ -252,7 +252,7 @@ object ModelTrainer_Gen extends LocalSparkContext {
         println(s"LR Model Intercept: ${lrModel.intercept}")
       case gbtModel: GBTRegressionModel =>
         // println("Learned regression GBT model:\n" + gbtModel.toDebugString)
-        val featureImportance = getFeatureImportance(gbtModel, allColumns)
+        val featureImportance = getFeatureImportance(gbtModel, featureColumns)
         featureImportance.foreach { case (importance, name) =>
           println(s"$name: $importance")
         }
