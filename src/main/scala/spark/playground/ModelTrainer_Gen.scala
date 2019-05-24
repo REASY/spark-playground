@@ -123,9 +123,7 @@ object ModelTrainer_Gen extends LocalSparkContext {
       println("Write is done")
       df
     }
-    linkStatDf.join(metaData, Seq("link_id"), "inner")
-
-    val df = linkStatDf
+    val df = linkStatDf.join(metaData, Seq("link_id"), "inner")
     println(df.count())
     println(s"Dataframe size is: ${SizeEstimator.estimate(df)}")
 
