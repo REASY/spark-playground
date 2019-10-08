@@ -1,23 +1,12 @@
 package spark.playground
 
-import java.io.{BufferedReader, InputStreamReader}
-import java.util.stream.Collectors
-
 import com.microsoft.ml.spark.core.metrics.MetricConstants
-import com.microsoft.ml.spark.core.schema.SchemaConstants
 import com.microsoft.ml.spark.lightgbm.{LightGBMClassificationModel, LightGBMClassifier}
 import com.microsoft.ml.spark.train.ComputeModelStatistics
 import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.evaluation.{BinaryClassificationEvaluator, RegressionEvaluator}
-import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
 import org.apache.spark.mllib.evaluation.{BinaryClassificationMetrics, MulticlassMetrics}
-import org.apache.spark.mllib.linalg.VectorUDT
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.TimestampType
-import org.apache.spark.sql.{Column, DataFrame}
-import org.apache.spark.storage.StorageLevel
-import org.apache.spark.util.SizeEstimator
 
 object LigthGbmUsage extends LocalSparkContext {
   def main(args: Array[String]): Unit = {
