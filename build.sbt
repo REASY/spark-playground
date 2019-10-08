@@ -33,7 +33,7 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % "2.4.3",
   "org.apache.spark" %% "spark-mllib"  % "2.4.3",
   "org.apache.spark" %% "spark-sql"  % "2.4.3",
-  "com.microsoft.ml.spark" %% "mmlspark" % "0.17"
+  "com.microsoft.ml.spark" %% "mmlspark" % "0.18.1"
 )
 
 assemblyMergeStrategy in assembly := {
