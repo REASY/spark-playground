@@ -3,7 +3,7 @@ package spark.playground
 import java.io.{BufferedReader, InputStreamReader}
 import java.util.stream.Collectors
 
-import com.microsoft.ml.spark.{LightGBMRegressionModel, LightGBMRegressor}
+import com.microsoft.ml.spark.lightgbm.{LightGBMRegressionModel, LightGBMRegressor}
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.VectorAssembler
@@ -168,6 +168,7 @@ object ModelTrainer_Gen extends LocalSparkContext {
       .setLabelCol(labelColumn)
       .setFeaturesCol(featureColumn)
       .setPredictionCol(predictedColumn)
+      .setNumBatches(100)
 
     val stages = Array(
       assembler,
