@@ -6,7 +6,6 @@ fork in run := true
 javaOptions ++= Seq("-Xmx6G", "-XX:+PrintGCDetails", "-XX:+PrintGCDateStamps", "-Xloggc:gc.log")
 
 resolvers += "MMLSpark Repo" at "https://mmlspark.azureedge.net/maven"
-resolvers += "Artima Maven Repository" at "http://repo.artima.com/releases"
 
 scalacOptions ++= Seq(
   "-deprecation",
