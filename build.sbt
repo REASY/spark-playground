@@ -1,12 +1,12 @@
 name := "spark-playground"
 version := "0.2.0-SNAPSHOT"
-scalaVersion := "2.11.12"
+scalaVersion := "2.12.15"
 
 fork in run := true
-javaOptions ++= Seq("-Xmx290G", "-XX:+PrintGCDetails", "-XX:+PrintGCDateStamps", "-Xloggc:gc.log")
+javaOptions ++= Seq("-Xmx18G", "-XX:+PrintGCDetails", "-XX:+PrintGCDateStamps", "-Xloggc:gc.log")
 
 resolvers += "MMLSpark Repo" at "https://mmlspark.azureedge.net/maven"
-resolvers += "Artima Maven Repository" at "http://repo.artima.com/releases"
+resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 
 scalacOptions ++= Seq(
   "-deprecation",
@@ -26,14 +26,14 @@ scalacOptions ++= Seq(
   "-Ywarn-unused-import"
 )
 libraryDependencies ++= Seq(
-  "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
-  "ch.qos.logback" % "logback-classic" % "1.1.8",
-  "org.scalatest" %% "scalatest" % "3.0.4" % "test",
-  "org.rogach" %% "scallop" % "3.0.3",
-  "org.apache.spark" %% "spark-core" % "2.4.3",
-  "org.apache.spark" %% "spark-mllib"  % "2.4.3",
-  "org.apache.spark" %% "spark-sql"  % "2.4.3",
-  "com.microsoft.ml.spark" %% "mmlspark" % "0.17"
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
+  "ch.qos.logback" % "logback-classic" % "1.2.11",
+  "org.scalatest" %% "scalatest" % "3.2.11" % "test",
+  "org.rogach" %% "scallop" % "4.1.0",
+  "org.apache.spark" %% "spark-core" % "3.2.1",
+  "org.apache.spark" %% "spark-mllib"  % "3.2.1",
+  "org.apache.spark" %% "spark-sql"  % "3.2.1",
+  "com.microsoft.azure" %% "synapseml" % "0.9.5"
 )
 
 assemblyMergeStrategy in assembly := {

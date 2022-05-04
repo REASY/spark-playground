@@ -1,9 +1,9 @@
 package spark.playground
 
+import com.microsoft.azure.synapse.ml.lightgbm.{LightGBMRegressionModel, LightGBMRegressor}
+
 import java.io.{BufferedReader, InputStreamReader}
 import java.util.stream.Collectors
-
-import com.microsoft.ml.spark.{LightGBMRegressionModel, LightGBMRegressor}
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.VectorAssembler
